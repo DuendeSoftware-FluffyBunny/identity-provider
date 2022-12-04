@@ -47,8 +47,7 @@
     <div class="border shadow appearance-none bg-white rounded px-7 py-3">
         <form action={{.UI.Action}} method={{.UI.Method}} class="space-y-6">
             {{ if .UI.Messages }}{{ range .UI.Messages }}
-            <div class="{{ if eq .Type " error
-            "}}bg-red-500{{ else }}bg-green-500{{ end }} text-white rounded px-4 py-3 text-sm">{{.Text}}
+            <div class="{{ if eq .Type "error"}}bg-red-500{{ else }}bg-green-500{{ end }} text-white rounded px-4 py-3 text-sm">{{.Text}}
     </div>
     {{ end }}{{ end }}
     {{ range .UI.Nodes }}
