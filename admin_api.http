@@ -1,0 +1,64 @@
+POST http://localhost:4445/admin/clients
+Content-Type: application/json
+
+{
+  "client_name": "Test OAuth2 Client",
+  "grant_types": [
+    "authorization_code",
+    "refresh_token"
+  ],
+  "redirect_uris": [
+    "http://localhost:4455/dashboard"
+  ],
+  "response_types": [
+    "code",
+    "id_token"
+  ],
+  "scope": "openid offline_access",
+  "token_endpoint_auth_method": "client_secret_post"
+}
+
+###
+
+POST http://localhost:4434/admin/identities
+Content-Type: application/json
+
+{
+  "credentials": {
+    "password": {
+      "config": {
+        "password": "secret"
+      }
+    }
+  },
+  "recovery_addresses": [
+    {
+      "created_at": "2019-08-24T14:15:22Z",
+      "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
+      "updated_at": "2019-08-24T14:15:22Z",
+      "value": "demo@example.com",
+      "via": "email"
+    }
+  ],
+  "schema_id": "default",
+  "state": "active",
+  "traits": {
+    "email": "demo@example.com"
+  },
+  "verifiable_addresses": [
+    {
+      "created_at": "2014-01-01T23:28:56.782Z",
+      "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
+      "status": "completed",
+      "updated_at": "2014-01-01T23:28:56.782Z",
+      "value": "demo@example.com",
+      "verified": true,
+      "verified_at": "2019-08-24T14:15:22Z",
+      "via": "email"
+    }
+  ]
+}
+
+###
+
+GET http://localhost:4434/admin/identities

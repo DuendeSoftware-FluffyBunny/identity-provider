@@ -1,0 +1,94 @@
+version: '3.8'
+
+networks:
+  identity-provider:
+    driver: bridge
+
+services:
+  idp-db:
+    image: postgres:alpine
+    container_name: idp-db
+    ports:
+      - 15432:5432
+    volumes:
+      - ./docker/db/init:/docker-entrypoint-initdb.d
+    environment:
+      - POSTGRES_USER=auth
+      - POSTGRES_PASSWORD=secret
+    networks:
+      - identity-provider
+    healthcheck:
+      test: "pg_isready -U auth"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  idp-hydra:
+    image: oryd/hydra:v2.0.2
+    container_name: idp-hydra
+    command: serve -c /etc/hydra/config/hydra.yml all --dev
+    volumes:
+      - type: bind
+        source: ./ory-config
+        target: /etc/hydra/config
+    ports:
+      - 4444:4444 # Public port
+      - 4445:4445 # Admin port
+      - 5555:5555 # Port for hydra token user
+    depends_on:
+      idp-db:
+        condition: service_healthy
+      idp-hydra-migrate:
+        condition: service_completed_successfully
+    restart: on-failure
+    networks:
+      - identity-provider
+
+  idp-kratos:
+    image: oryd/kratos:v0.11.0
+    container_name: idp-kratos
+    command: serve -c /etc/kratos/config/kratos.yml --dev --watch-courier
+    volumes:
+      - type: bind
+        source: ./ory-config
+        target: /etc/kratos/config
+      - type: bind
+        source: ./identity-schemas
+        target: /etc/kratos/identity-schemas
+    ports:
+      - 4433:4433 # public
+      - 4434:4434 # admin
+    depends_on:
+      idp-db:
+        condition: service_healthy
+      idp-kratos-migrate:
+        condition: service_completed_successfully
+    restart: on-failure
+    networks:
+      - identity-provider
+
+  idp-kratos-migrate:
+    depends_on:
+      - idp-db
+    container_name: idp-kratos-migrate
+    image: oryd/kratos:v0.11.0
+    environment:
+      - DSN=postgres://auth:secret@idp-db:5432/kratos?sslmode=disable&max_conns=20&max_idle_conns=4
+    command: migrate sql -e --yes
+    networks:
+      - identity-provider
+
+  idp-hydra-migrate:
+    depends_on:
+      idp-db:
+        condition: service_healthy
+      idp-kratos-migrate:
+        condition: service_completed_successfully
+    container_name: idp-hydra-migrate
+    image: oryd/hydra:v2.0.2
+    environment:
+      - DSN=postgres://auth:secret@idp-db:5432/hydra?sslmode=disable&max_conns=20&max_idle_conns=4
+      - SECRETS_SYSTEM=youReallyNeedToChangeThis
+    restart: on-failure
+    command: migrate sql -e --yes
+    networks:
+      - identity-provider

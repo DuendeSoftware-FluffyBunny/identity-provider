@@ -1,0 +1,46 @@
+## ORY Hydra Configuration
+version: v2.0.2
+
+serve:
+  public:
+    cors:
+      enabled: true
+
+dsn: postgres://auth:secret@idp-db:5432/hydra?sslmode=disable&max_conns=20&max_idle_conns=4
+
+oidc:
+  subject_identifiers:
+    supported_types:
+      - public
+      - pairwise
+    pairwise:
+      salt: youReallyNeedToChangeThis
+
+urls:
+  login: http://localhost:4455/login
+  post_logout_redirect: http://localhost:4455/login
+  consent: http://localhost:4455/auth/consent
+  logout: http://localhost:4455/logout
+  error: http://localhost:4455/error
+  self:
+    public: http://localhost:4444/
+    issuer: http://localhost:4444/
+
+ttl:
+  access_token: 1h
+  refresh_token: 1h
+  id_token: 1h
+  auth_code: 1h
+
+oauth2:
+  expose_internal_errors: true
+
+secrets:
+  cookie:
+    - youReallyNeedToChangeThis
+  system:
+    - youReallyNeedToChangeThis
+
+log:
+  leak_sensitive_values: true
+  level: debug
