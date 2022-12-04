@@ -3,14 +3,14 @@ package server
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"fmt"
 	"io"
 	"net/http"
-	"strings"
-
-	"go.uber.org/zap"
+	"net/url"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/gommon/log"
+	"go.uber.org/zap"
 )
 
 func (s *Server) handleLogin(c echo.Context) error {
@@ -41,29 +41,10 @@ func (s *Server) handleLogin(c echo.Context) error {
 	}
 
 	if flowID == "" {
-		loginFlow, res, err := s.kratosPublicAPIClient.FrontendApi.CreateBrowserLoginFlow(c.Request().Context()).LoginChallenge(loginChallenge).Execute()
-		if err != nil {
-			b, _ := io.ReadAll(res.Body)
-			s.logger.Debug("failed to create browser login flow", zap.ByteString("response", b), zap.Error(err))
-			return echo.NewHTTPError(http.StatusInternalServerError, err)
+		param := url.Values{
+			"login_challenge": []string{loginChallenge},
 		}
-		setCookie := res.Header.Get("set-cookie")
-		s.logger.Debug("cookie string", zap.String("raw_cookie", setCookie))
-		cc := parseSetCookies(setCookie)
-
-		ui := loginFlow.Ui
-
-		for _, cookie := range cc {
-			s.logger.Debug("cookie", zap.String(cookie.Name, cookie.Value))
-			if strings.HasPrefix(cookie.Name, "csrf_token") {
-				c.SetCookie(cookie)
-			}
-		}
-
-		return c.Render(http.StatusOK, "index.html", map[string]interface{}{
-			"Title": "Login",
-			"UI":    ui,
-		})
+		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("%s/self-service/login/browser?%s", s.kratosPublicEndpoint, param.Encode()))
 	}
 
 	loginFlow, res, err := s.kratosPublicAPIClient.FrontendApi.GetLoginFlow(c.Request().Context()).Id(flowID).Cookie(cookie).Execute()
